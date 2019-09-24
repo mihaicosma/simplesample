@@ -19,7 +19,7 @@ objects:
     annotations:
       openshift.io/image.insecureRepository: "true" 
   spec:
-    dockerImageRepository: lw101vw0138.mauintra.de/jboss-webserver-5/webserver50-tomcat9-openshift
+    dockerImageRepository: registry.access.redhat.com/jboss-webserver-5/webserver50-tomcat9-openshift
   importPolicy:
     insecure: true  
 
