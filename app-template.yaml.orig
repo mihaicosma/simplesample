@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: sample-app-base-template
+  role: sample
+metadata:
+  annotations:
+    description: Mihai Sample Template
+    iconClass: icon-github
+    tags: mocks,devops,sample
+  name: SampleApp
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: rhel7-tomcat9
+    annotations:
+      openshift.io/image.insecureRepository: "true" 
+  spec:
+    dockerImageRepository: registry.access.redhat.com/jboss-webserver-5/webserver50-tomcat9-openshift
+  importPolicy:
+    insecure: true  
+- apiVersion: v1  
+  kind: ImageStream
+  metadata:
+    annotations:
+      label: simplesample
+    name: simplesample
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      build: simplesample
+    name: simplesample
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: simplesample:1.0
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      contextDir: .
+      git:
+        ref: master
+        uri: git@git:git/git.git
+      sourceSecret:
+        name: gitsecret
+      type: Git
+    strategy:
+      dockerStrategy:
+        env:
+          - name: WAR_FILE
+            value: ${WAR_FILE}
+        from:
+          kind: ImageStreamTag
+          name: rhel7-tomcat9:1.2
+      type: Docker
+    triggers:
+    - imageChange: {}
+      type: ImageChange
+parameters:
+- description: The name for the war file.
+  name: WAR_FILE
+  required: false
+  value: sample.war

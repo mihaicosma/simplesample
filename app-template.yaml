@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: sample-app-base-template
+  role: sample
+metadata:
+  annotations:
+    description: ${NAMESPACE} Sample Template
+    iconClass: icon-github
+    tags: mocks,devops,sample
+  name: SampleApp
+
+objects:
+
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: rhel7-tomcat9
+    annotations:
+      openshift.io/image.insecureRepository: "true" 
+  spec:
+    dockerImageRepository: lw101vw0138.mauintra.de/jboss-webserver-5/webserver50-tomcat9-openshift
+  importPolicy:
+    insecure: true  
+
+- apiVersion: v1  
+  kind: ImageStream
+  metadata:
+    annotations:
+      label: simplesample
+      openshift.io/image.insecureRepository: "true"
+    name: simplesample
+  spec:
+    dockerImageRepository: docker-registry.default.svc:5000/${NAMESPACE}/simplesample
+
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      build: simplesample
+    name: simplesample
+  spec:
+    output:
+      to:
+        kind: "DockerImage"
+        name: "docker-registry.default.svc:5000/${NAMESPACE}/simplesample:1.0"
+        annotations:
+          openshift.io/image.insecureRepository: "true"
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      contextDir: .
+      git:
+        ref: master
+        uri: git@git:git/git.git
+      sourceSecret:
+        name: gitsecret
+      type: Git
+    strategy:
+      dockerStrategy:
+        env:
+          - name: WAR_FILE
+            value: ${WAR_FILE}
+        from:
+          kind: ImageStreamTag
+          name: rhel7-tomcat9:1.2
+      type: Docker
+    triggers:
+    - imageChange: {}
+      type: ImageChange
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: simplesample
+    name: simplesample
+  spec:
+    replicas: 1
+    selector:
+      app: simplesample
+      deploymentconfig: simplesample
+    template:
+      metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: simplesample
+          deploymentconfig: simplesample
+      spec:
+        containers:
+        - image: docker-registry.default.svc:5000/${NAMESPACE}/simplesample:1.0
+          imagePullPolicy: Always
+          name: simplesample
+        restartPolicy: Always
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - simplesample
+        from:
+          kind: ImageStreamTag
+          name: simplesample:1.0
+          namespace: ${NAMESPACE}
+      type: ImageChange
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: simplesample
+    name: simplesample
+  spec:
+    selector:
+      deploymentconfig: simplesample
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: 8443-tcp
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    - name: 8778-tcp
+      port: 8778
+      protocol: TCP
+      targetPort: 8778
+    sessionAffinity: None
+    type: ClusterIP
+
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: simplesample
+    name: simplesample 
+  spec:
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: simplesample
+      weight: 100
+    wildcardPolicy: None
+
+parameters:
+- description: The name for the war file.
+  name: WAR_FILE
+  required: false
+  value: sample.war
+- description: The namespace
+  name: NAMESPACE
+  required: false
+  value: mihai
