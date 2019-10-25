@@ -31,7 +31,7 @@ objects:
       openshift.io/image.insecureRepository: "true"
     name: simplesample
   spec:
-    dockerImageRepository: docker-registry.default.svc:5000/${NAMESPACE}/simplesample
+    dockerImageRepository: image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/simplesample
 
 - apiVersion: v1
   kind: BuildConfig
@@ -43,7 +43,7 @@ objects:
     output:
       to:
         kind: "DockerImage"
-        name: "docker-registry.default.svc:5000/${NAMESPACE}/simplesample:1.0"
+        name: "image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/simplesample:1.0"
         annotations:
           openshift.io/image.insecureRepository: "true"
     postCommit: {}
@@ -64,7 +64,7 @@ objects:
             value: ${WAR_FILE}
         from:
           kind: ImageStreamTag
-          name: rhel7-tomcat9:1.2
+          name: rhel7-tomcat9:latest
       type: Docker
     triggers:
     - imageChange: {}
@@ -91,7 +91,7 @@ objects:
           deploymentconfig: simplesample
       spec:
         containers:
-        - image: docker-registry.default.svc:5000/${NAMESPACE}/simplesample:1.0
+        - image: image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/simplesample:1.0
           imagePullPolicy: Always
           name: simplesample
         restartPolicy: Always

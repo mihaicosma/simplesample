@@ -29,10 +29,17 @@ echo.
 echo.
 set /p DUMMY="Press enter to continue, CTRL+C to stop the execution..."
 
+rem ########## CREATE PROJECT ######
+oc new-project "%PROJECT_NAME%" 
+oc project "%PROJECT_NAME%"
+
 rem ########## DEPLOY TEMPLATE
 echo.
-echo Creating/Modifying SampleWebApp in the CI/CD project...
-oc process -f app-template.yaml -p WAR_FILE="%WAR_FILE%"  | oc apply -n "%PROJECT_NAME%" -f - 
+echo Creating/Modifying SampleWebApp in the CI/CD project...	
+oc apply -f gitsecret.yaml
+oc process -f app-template.yaml -p WAR_FILE="%WAR_FILE%" -p NAMESPACE="%PROJECT_NAME%"  | oc apply -n "%PROJECT_NAME%" -f - 
+rem oc import-image rhel7-tomcat9
+rem oc start-build simplesample --from-dir="." --follow
 
 rem ########## P R O C E S S    C O M P L E T E D
 echo.
